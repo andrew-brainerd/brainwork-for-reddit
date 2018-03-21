@@ -44,7 +44,7 @@ namespace BrainForReddit.Controllers
             return View();
         }
 
-        public async Task<IActionResult> Authorize(string code, string access_token)
+        public async Task<IActionResult> Authorize(string error, string code, string state, string access_token)
         {
             var currentAuthStep = HttpContext.Session.GetString("CurrentAuthStep");
 
@@ -58,7 +58,7 @@ namespace BrainForReddit.Controllers
                 if (code != null)
                 {
                     HttpContext.Session.SetString("CurrentAuthStep", "token");
-                    await RequestAccessToken(code);
+                    await RequestAccessToken(error, code, state);
                 }
             }
 
@@ -83,7 +83,7 @@ namespace BrainForReddit.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        public static async Task<string> RequestAccessToken(string code)
+        public static async Task<string> RequestAccessToken(string error, string code, string state)
         {
             HttpClient client = new HttpClient() { BaseAddress = new Uri("https://www.reddit.com/") };
 
