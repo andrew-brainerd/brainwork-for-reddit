@@ -18,7 +18,7 @@ namespace BrainForReddit.Controllers
         private static string tokenEndpoint = "/api/v1/access_token";
         private static string clientId = "dYZpA0WtQHj1dA";
         private static string responseType = "code";
-        private static string state = new Random().Next().ToString();
+        private static string initialState = new Random().Next().ToString();
         private static string scope = "read";
         private static string duration = "temporary"; // or "permanent"
         private static string redirectUrl = "http://localhost:61428/Home/Authorize";
@@ -28,7 +28,7 @@ namespace BrainForReddit.Controllers
             "&response_type=" + responseType + 
             "&scope=" + scope + 
             "&duration=" + duration + 
-            "&state=" + state;
+            "&state=" + initialState;
 
         public IActionResult Index()
         {
@@ -86,6 +86,11 @@ namespace BrainForReddit.Controllers
         public static async Task<string> RequestAccessToken(string error, string code, string state)
         {
             HttpClient client = new HttpClient() { BaseAddress = new Uri("https://www.reddit.com/") };
+
+            if (state != initialState)
+            {
+                throw new Exception("State changed");
+            }
 
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
