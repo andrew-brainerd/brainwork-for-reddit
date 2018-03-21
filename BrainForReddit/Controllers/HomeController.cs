@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using BrainForReddit.Models;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 
 namespace BrainForReddit.Controllers
 {
@@ -16,7 +17,8 @@ namespace BrainForReddit.Controllers
         private static string baseUrl = "https://ssl.reddit.com";
         private static string authEndpoint = "/api/v1/authorize/";
         private static string tokenEndpoint = "/api/v1/access_token";
-        private static string clientId = "dYZpA0WtQHj1dA";
+        private static string clientId = "";
+        private static string clientSecret = "";
         private static string responseType = "code";
         private static string initialState = new Random().Next().ToString();
         private static string scope = "read";
@@ -58,7 +60,9 @@ namespace BrainForReddit.Controllers
                 if (code != null)
                 {
                     HttpContext.Session.SetString("CurrentAuthStep", "token");
-                    await RequestAccessToken(error, code, state);
+                    var token = await RequestAccessToken(error, code, state);
+
+                    ViewData["AccessToken"] = token;
                 }
             }
 
@@ -92,12 +96,11 @@ namespace BrainForReddit.Controllers
                 throw new Exception("State changed");
             }
 
+            var byteArray = Encoding.ASCII.GetBytes(clientId + ":" + clientSecret);
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            HttpResponseMessage response;
-
-            var tokenRequest = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+            
             var httpContent = new FormUrlEncodedContent(
                 new[]
                 {
@@ -106,8 +109,7 @@ namespace BrainForReddit.Controllers
                         new KeyValuePair<string, string>("redirect_uri", redirectUrl)
                 });
 
-            tokenRequest.Content = httpContent;
-            response = await client.SendAsync(tokenRequest);
+            var response = await client.PostAsync(tokenEndpoint, httpContent);
 
             var accessToken = await response.Content.ReadAsStringAsync();
 
